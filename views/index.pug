@@ -1,0 +1,32 @@
+extends layout
+block title
+    title Sign in
+
+block content
+        {{# if errors }}
+        {{# each errors }}
+        <p class="alert alert-danger">{{ this.msg }}</p>
+        {{/each}}
+        {{/if}}
+    div.text-center
+        form(class="form-signin" method="POST" action="/login")
+            #error
+                if error
+                    p.text-danger Error!!!
+
+            - var h1Classes = ['h3', 'mb-3', 'font-weight-normal']
+            h1(class=h1Classes) Please sign in
+
+            //-input email
+            label( for="inputEmail" class="sr-only") Email address
+            input(type="text" name="username" id="inputEmail" class="form-control" placeholder="Username" required autofocus)
+
+            //-input password
+            label(for="inputPassword" class="sr-only") Password
+            input(type="password" name="password" id="inputPassword" class="form-control" placeholder="Password" required)
+
+            //-signIn button
+            - var buttonClass=['btn', 'btn-lg', 'btn-primary', 'btn-block'];
+            button(class=buttonClass type="submit") Sign in
+            - var pClasses=['mt-5', 'mb-3', 'text-muted'];
+                p(class=pClasses) © 2019-2020
