@@ -8,7 +8,7 @@ function isUniqueEmail(res, email) {
         attributes: ['id'],
         where: {email: email}
     }).then(result => {
-        if(result.length == 0) {
+        if (result.length == 0) {
             return api.response(res, {
                 code: 422,
                 errors: 'email must be unique',
@@ -28,7 +28,7 @@ function isUniqueUsername(res, username) {
         attributes: ['id'],
         where: {username: username}
     }).then(result => {
-        if(result.length == 0) {
+        if (result.length == 0) {
             return api.response(res, {
                 code: 422,
                 errors: 'username must be unique',
@@ -45,35 +45,89 @@ function isUniqueUsername(res, username) {
 
 // Create and Save a new Object   == 201
 exports.store = async (req, res, next) => {
-    console.log('Reqest is ....');
+    //console.log('Reqest is ....');
     //console.log(JSON.stringify(req.body));
     //  return res.send(JSON.parse(JSON.stringify(req.body)));
-    console.log(req.body);
-    console.log(req.body);
 
-    await validate(req, res, next);
+    //await validate(req, res, next);
     // check email
-    await isUniqueEmail(res,req.body.email);
+    //await isUniqueEmail(res,req.body.email);
     // check username
-    await isUniqueUsername(res,req.body.username);
+    //await isUniqueUsername(res,req.body.username);
+    console.log('start function');
+    await User.findAll({
+        attributes: ['id'],
+        where: {username: req.body.username}
+    }).then(result => {
+        console.log('start: unique error username................');
+        if (result.length >= 1) {
+            console.log('true......');
+            return api.response(res, {
+                code: 422,
+                errors: 'username must be unique',
+            });
+        }
+        console.log('end: unique error username................');
 
-    //TODO:: upload image in the folder uploads and return path directory folder
+        if (result.length == 0) {
+            User.findAll({
+                attributes: ['id'],
+                where: {email: req.body.email}
+            }).then(result => {
+                console.log('start: unique error email................');
+                if (result.length >= 1) {
+                    console.log('true......');
+                    return api.response(res, {
+                        code: 422,
+                        errors: 'email must be unique',
+                    });
+                }
+                console.log('end: unique error email................');
 
-    //encryption password
-    const password = await bcrypt.hash(req.body.password, 8);
-    req.body.password = password;
+                if (result.length == 0) {
 
-    //insert in the database
-    await User.create(req.body).then(result => {
-        return api.response(res, {
-            code: 201
-        });
+                    //TODO:: upload image in the folder uploads and return path directory folder
+
+                    console.log('start: encryption password................');
+                    //encryption password
+                    req.body.password = bcrypt.hashSync(req.body.password, bcrypt.genSaltSync(10));
+                    console.log('end: encryption password................');
+
+
+                    console.log('start: insert user in database...............');
+                    //insert in the database
+                    User.create(req.body).then(result => {
+                        console.log('true: insert user in database...............');
+                        return api.response(res, {
+                            code: 201
+                        });
+                    }).catch(function (err) {
+                        console.log('catch: insert user in database...............');
+                        return api.response(res, {
+                            code: 422,
+                            errors: err.message,
+                        });
+                    });
+                    console.log('end: insert user in database...............');
+                }
+            }).catch(function (err) {
+                console.log('start: catch unique email................');
+                return api.response(res, {
+                    code: 422,
+                    errors: err.message,
+                });
+                console.log('end: catch unique email................');
+            });
+        }
     }).catch(function (err) {
+        console.log('start: catch unique username................');
+        console.log(err.errors);
+        console.log(err.message);
         return api.response(res, {
             code: 422,
-            message: err.message,
             errors: err.errors,
         });
+        console.log('end: catch unique username................');
     });
 };
 
