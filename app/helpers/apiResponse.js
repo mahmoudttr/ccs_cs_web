@@ -58,12 +58,12 @@ function isSuccess(statusCode = 200) {
 function jsonFormat(body) {
     return {
         result: isSuccess(body.code ? body.code : null),
-        message: statusMessage(body.code ? body.code : null, body.message ? body.message : null),
+        message: statusMessage(body.code ? body.code : null , body.message ? body.message : null),
         errors: body.errors ? body.errors : null,
         data: body.data ? body.data : null
     };
 }
 
 exports.response = function (res, body) {
-    return res.status(body.code).json(jsonFormat(body));
+    return res.status(body.code).send(jsonFormat(body));
 };

@@ -5,8 +5,13 @@
  */
 
 var app = require('../app');
+var fs = require('fs');
 var debug = require('debug')('ccs:server');
-var http = require('http');
+var https = require('https');
+// var http = require('http');
+var socket = require('socket.io');
+var chatHelper = require('../app/helpers/chat');
+const {Session, connection} = require("../app/models/session");
 
 /**
  * Get port from environment and store in Express.
@@ -19,7 +24,154 @@ app.set('port', port);
  * Create HTTP server.
  */
 
-var server = http.createServer(app);
+const server = https.createServer({
+    key: fs.readFileSync("/var/cert/swifthelp.org.key", 'utf8'),
+    cert: fs.readFileSync("/var/cert/swifthelp.org.crt", 'utf8'),
+    ca: fs.readFileSync("/var/cert/swifthelp.org.chain", 'utf8')
+}, app);
+
+// const server = http.createServer(app);
+
+var sio = socket(server);
+
+
+sio.use(function (socket, next) {
+    var handshakeData = socket.request;
+
+    var data = handshakeData._query['auth_token'];
+    console.log("hello", data, "___", socket.id);
+    return next();
+    // if (data == "517") return next();
+    // next(new Error('Authentication error'));
+    //return next();
+});
+
+
+sio.on('connection', function (visitor) {
+
+    console.log('user available now by id=>', visitor.id);
+
+
+    visitor.on('disconnect', function () {
+        console.log('user disconnect now by id=>', visitor.id);
+        chatHelper.deleteSession(visitor.id);
+    });
+
+
+    visitor.on('auth', function (data) {
+        console.log('user auth in the chat=>', visitor.id);
+        console.log('user auth in the chat=>', data.senderID);
+        chatHelper.auth(data.senderID, visitor.id);
+    });
+
+
+    visitor.on('message', function (data) {
+        for (var socketid in sio.sockets.sockets) {
+            console.log('id=>', socketid, "my id is :", visitor.id);
+            if (socketid != visitor.id) {
+                sio.to(socketid).emit('new_msg', data)
+            }
+            //sio.to.socket(socketid).emit('new_msg',data)
+            //sio.broadcast.to(socketid).emit('new_msg',data)
+        }
+
+        console.log("message..........." + data);
+        //sio.sockets.emit('new_msg',data);
+        console.log("The server successfully sent the message to all users");
+    });
+
+
+    visitor.on('typing', function (data) {
+        sio.sockets.emit('new_msg', data);
+        console.log(visitor.id + " is typing");
+    });
+
+
+    visitor.on('user_chat', function (data) {
+        console.log('!!!!!!!!!!!!' + data.receiverID);
+
+        //var receiver =  chatHelper.getSocketId(data.receiverID);
+
+        Session.findAll({
+            raw: true,
+            attributes: [
+                'id',
+                'user_id',
+                'socket_id'
+            ],
+            where: {
+                user_id: data.receiverID
+            }
+        }).then(session => {
+            const r = session.map(resutl => {
+                console.log(resutl.socket_id);
+                return resutl;
+            });
+
+            // console.log('new_msg_user_chat', r);
+            // console.log('new_msg_user_chat', data);
+
+            r.forEach(session => {
+                console.log(session.socket_id);
+                sio.to(session.socket_id).emit('new_msg_user_chat', data)
+
+            });
+
+
+        }).catch(function (err) {
+            console.log('error-----------------------');
+            console.log(err.message);
+        });
+
+
+        //console.log('--------------------------',receiver);
+
+        /*   if (receiver) {
+
+               sio.to(receiver).emit('new_msg_user_chat', data)
+           }*/
+
+        // sio.to(`${socketId}`).emit('hey', 'I just met you');
+
+        //console.log(visitor.id + " is typing");
+    });
+
+
+    visitor.on('group_chat', function (data) {
+        console.log(data);
+        const groupId = data.receiverID;
+        connection.query('SELECT sessions.socket_id FROM groups JOIN user_groups ON user_groups.group_id = groups.id JOIN users ON user_groups.user_id = users.id JOIN sessions ON sessions.user_id = users.id where groups.id= ? ',
+            {replacements: [groupId], type: connection.QueryTypes.SELECT}
+        ).then(users => {
+            users.forEach(users => {
+                console.log(users.socket_id);
+                if(users.socket_id != visitor.id) {
+                    sio.to(users.socket_id).emit('new_msg_group_chat', data)
+                }
+
+            });
+            console.log(users);
+        }).catch(function (err) {
+            console.log(err.message);
+        });
+
+        //sio.sockets.emit('new_msg', data);
+        //get sender
+        //get reciver_group
+        //get all users in the reciver_group
+        //get all online users in the reciver_group
+        //get message
+        //if recievers online send message
+
+        // console.log(visitor.id + " is typing");
+    });
+
+
+    visitor.on('borad', function (data) {
+        visitor.broadcast.emit('new_brodcast', data);
+    });
+});
+
 
 /**
  * Listen on provided port, on all network interfaces.
@@ -34,19 +186,19 @@ server.on('listening', onListening);
  */
 
 function normalizePort(val) {
-  var port = parseInt(val, 10);
+    var port = parseInt(val, 10);
 
-  if (isNaN(port)) {
-    // named pipe
-    return val;
-  }
+    if (isNaN(port)) {
+        // named pipe
+        return val;
+    }
 
-  if (port >= 0) {
-    // port number
-    return port;
-  }
+    if (port >= 0) {
+        // port number
+        return port;
+    }
 
-  return false;
+    return false;
 }
 
 /**
@@ -54,27 +206,27 @@ function normalizePort(val) {
  */
 
 function onError(error) {
-  if (error.syscall !== 'listen') {
-    throw error;
-  }
+    if (error.syscall !== 'listen') {
+        throw error;
+    }
 
-  var bind = typeof port === 'string'
-    ? 'Pipe ' + port
-    : 'Port ' + port;
+    var bind = typeof port === 'string'
+        ? 'Pipe ' + port
+        : 'Port ' + port;
 
-  // handle specific listen errors with friendly messages
-  switch (error.code) {
-    case 'EACCES':
-      console.error(bind + ' requires elevated privileges');
-      process.exit(1);
-      break;
-    case 'EADDRINUSE':
-      console.error(bind + ' is already in use');
-      process.exit(1);
-      break;
-    default:
-      throw error;
-  }
+    // handle specific listen errors with friendly messages
+    switch (error.code) {
+        case 'EACCES':
+            console.error(bind + ' requires elevated privileges');
+            process.exit(1);
+            break;
+        case 'EADDRINUSE':
+            console.error(bind + ' is already in use');
+            process.exit(1);
+            break;
+        default:
+            throw error;
+    }
 }
 
 /**
@@ -82,9 +234,9 @@ function onError(error) {
  */
 
 function onListening() {
-  var addr = server.address();
-  var bind = typeof addr === 'string'
-    ? 'pipe ' + addr
-    : 'port ' + addr.port;
-  debug('Listening on ' + bind);
+    var addr = server.address();
+    var bind = typeof addr === 'string'
+        ? 'pipe ' + addr
+        : 'port ' + addr.port;
+    debug('Listening on ' + bind);
 }

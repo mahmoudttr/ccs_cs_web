@@ -4,6 +4,7 @@ const {validate} = require('../requests/groupUser');
 const api = require('../helpers/apiResponse');
 
 
+
 // Create and Save a new Object   == 201
 exports.create = async (req, res, next) => {
     //validation data
@@ -48,10 +49,48 @@ exports.users = (req, res) => {
     const groupName = req.params.groupName;
     connection.query('SELECT user_groups.id,groups.id as group_id,groups.name as group_name,users.id as user_id,users.username as user_name FROM groups JOIN user_groups ON user_groups.group_id = groups.id JOIN users ON user_groups.user_id = users.id where groups.name= ? ',
         {replacements: [groupName], type: connection.QueryTypes.SELECT}
-    ).then(result => {
+    ).then(users => {
         return api.response(res, {
             code: 200,
-            data: result,
+            data: {users},
+        });
+    }).catch(function (err) {
+        return api.response(res, {
+            code: 422,
+            errors: err.message,
+        });
+    });
+    /*Group.findAll({
+        attributes: {},
+        where: {name: req.params.groupName},
+        include: [{
+            model: User,
+            through: {
+                attributes: ['*']
+            }
+        }],
+    }).then(groups => {
+        return api.response(res, {
+            code: 200,
+            data: groups,
+        });
+    }).catch(function (err) {
+        return api.response(res, {
+            code: 422,
+            errors: err.message,
+        });
+    });*/
+};
+
+
+exports.groupsByUserID = (req, res) => {
+    const userId = req.params.userId;
+    connection.query('SELECT user_groups.id,groups.id as group_id,groups.name as group_name,users.id as user_id,users.username as user_name FROM groups JOIN user_groups ON user_groups.group_id = groups.id JOIN users ON user_groups.user_id = users.id where users.id= ? ',
+        {replacements: [userId], type: connection.QueryTypes.SELECT}
+    ).then(groups_user => {
+        return api.response(res, {
+            code: 200,
+            data: {groups_user:groups_user},
         });
     }).catch(function (err) {
         return api.response(res, {

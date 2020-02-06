@@ -2,16 +2,19 @@ const express = require('express');
 const router = express.Router();
 const api = require('../app/helpers/apiResponse');
 
+const chatController = require('../app/controllers/chatController');
 const roleController = require('../app/controllers/roleController');
 const userController = require('../app/controllers/userController');
 const groupController = require('../app/controllers/groupController');
 const groupUserController = require('../app/controllers/groupUserController');
 
-router.get('/test', function (req, res, next) {
-    return api.response(res,{
-        code: 400
-    });
-});
+
+
+// Chat
+router.post('/chat/auth', chatController.store);
+router.get('/chat/:userId/user', chatController.findSocketIdByUserId);
+
+
 
 // Roles
 router.get('/roles', roleController.findAll);
@@ -37,6 +40,7 @@ router.delete('/groups', groupController.deleteAll);
 router.get('/group-users', groupUserController.findAll);
 router.get('/group-users/:id', groupUserController.findOne);
 router.get('/group-users/users/:groupName', groupUserController.users);
+router.get('/group-users/groups/:userId', groupUserController.groupsByUserID);
 router.post('/group-users', groupUserController.create);
 router.put('/group-users/:id', groupUserController.update);
 router.delete('/group-users/:id', groupUserController.delete);

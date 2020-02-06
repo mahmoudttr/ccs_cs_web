@@ -11,7 +11,7 @@ exports.findAll = (req, res) => {
     }).then(roles => {
         return api.response(res, {
             code: 200,
-            data: roles,
+            data: {roles},
         });
     }).catch(function (err) {
         return api.response(res, {

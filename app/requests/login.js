@@ -11,7 +11,8 @@ const validate = (req, res, next) => {
             const schemaErrors = errors.inner.map(err => {
                 return {field: err.path, message: err.message};
             });
-            return res.status(422).json({
+            return api.response(res, {
+                code: 422,
                 errors: schemaErrors,
             });
         });

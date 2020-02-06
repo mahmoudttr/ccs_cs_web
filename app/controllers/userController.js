@@ -141,12 +141,13 @@ exports.findAll = (req, res) => {
             'last_name',
             'email',
             'image',
-            'phone_number_pbx'
+            'phone_number_pbx',
+            'fcm_token'
         ]
     }).then(users => {
         return api.response(res, {
             code: 200,
-            data: users,
+            data: {users},
         });
     }).catch(function (err) {
         return api.response(res, {
@@ -166,7 +167,8 @@ exports.findOne = (req, res) => {
             'last_name',
             'email',
             'image',
-            'phone_number_pbx'
+            'phone_number_pbx',
+            'fcm_token'
         ],
         where: {
             id: req.params.id
@@ -174,11 +176,11 @@ exports.findOne = (req, res) => {
     }).then(user => {
         return api.response(res, {
             code: 200,
-            data: user
+            data: {user}
         });
     }).catch(function (err) {
         return api.response(res, {
-            code: err.code,
+            code: 400,
             errors: err.message,
         });
     });
@@ -186,21 +188,81 @@ exports.findOne = (req, res) => {
 
 // Update a Object identified by the objectId in the request == 204
 exports.update = (req, res) => {
-    // TODO::validation data
-    // update data
+    var uniqueEmail = 0;
+    var uniqueUsername = 0;
+
+
     User.update(req.body, {
         returning: true,
         where: {id: req.params.id}
     }).then(function (result, user) {
-        return api.response(res, {
-            code: 200
-        });
+        if (result[1] == 0) {
+            return api.response(res, {
+                code: 400,
+                errors: 'error ...',
+            });
+        } else {
+            return api.response(res, {
+                code: 200
+            });
+        }
+
     }).catch(function (err) {
         return api.response(res, {
-            code: err.code,
+            code: 422,
             errors: err.message,
         });
     });
+    ///////////////////////////////////////////////
+/*    if (req.body.email) {
+        User.findAll({
+            attributes: ['id'],
+            where: {email: req.body.email}
+        }).then(result => {
+            if (result.length >= 1) {
+                return api.response(res, {
+                    code: 422,
+                    errors: 'email must be unique',
+                });
+            } else {
+                uniqueEmail = 1;
+            }
+        }).catch(function (err) {
+            console.log('email................');
+            return api.response(res, {
+                code: 422,
+                errors: err.message,
+            });
+        });
+    }
+
+    if (req.body.username) {
+        User.findAll({
+            attributes: ['id'],
+            where: {username: req.body.username}
+        }).then(result => {
+            if (result.length >= 1) {
+                return api.response(res, {
+                    code: 422,
+                    errors: 'username must be unique',
+                });
+            } else {
+                uniqueUsername = 1;
+            }
+        }).catch(function (err) {
+            console.log('username................');
+            return api.response(res, {
+                code: 422,
+                errors: err.message,
+            });
+        });
+    }
+    console.log(uniqueUsername, uniqueEmail);
+
+    if (uniqueUsername == 1 && uniqueEmail == 1) {
+        // update data
+
+    }*/
 };
 
 // Delete a Object with the specified objectId in the request
@@ -218,7 +280,7 @@ exports.delete = (req, res) => {
         return api.response(res, {code: 200, message: 'Delete successful'});
     }).catch(function (err) {
         return api.response(res, {
-            code: err.code,
+            code: 400,
             errors: err.message,
         });
     });
@@ -232,7 +294,7 @@ exports.deleteAll = (req, res) => {
         return api.response(res, {code: 200});
     }).catch(function (err) {
         return api.response(res, {
-            code: err.code,
+            code: 400,
             errors: err.message,
         });
     });

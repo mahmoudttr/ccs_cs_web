@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="WebServers">
+    <option name="servers">
+      <webServer id="0c0dd5b5-dfbc-4992-bc1a-db8ec1de3320" name="ccs" url="http://78.141.219.180">
+        <fileTransfer host="78.141.219.180" port="22" rootFolder="/var/nodes/ccs/cs/ccs_cs_web" accessType="SFTP">
+          <advancedOptions>
+            <advancedOptions dataProtectionLevel="Private" passiveMode="true" shareSSLContext="true" />
+          </advancedOptions>
+          <option name="port" value="22" />
+        </fileTransfer>
+      </webServer>
+    </option>
+  </component>
+</project>

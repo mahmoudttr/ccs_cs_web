@@ -32,6 +32,10 @@ const User = connection.define('users', {
         type: Sequelize.STRING,
         allowNull: true
     },
+    fcm_token: {
+        type: Sequelize.STRING,
+        allowNull: true
+    },
     role_id: {
         type: Sequelize.INTEGER.UNSIGNED,
         allowNull: true

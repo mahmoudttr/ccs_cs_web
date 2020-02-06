@@ -1,6 +1,6 @@
 const Sequelize = require('sequelize');
 const {Group, connection} = require("../models/group");
-const {User} = require("../models/User");
+const {User} = require("../models/user");
 const api = require('../helpers/apiResponse');
 const {validate} = require('../requests/group');
 
@@ -38,7 +38,7 @@ exports.findAll = (req, res) => {
     }).then(groups => {
         return api.response(res, {
             code: 200,
-            data: groups,
+            data: {groups},
         });
     }).catch(function (err) {
         return api.response(res, {
@@ -61,16 +61,16 @@ exports.findOne = (req, res) => {
         where: {
             id: req.params.id
         }
-    }).then(groups => {
-        if(groups.length == 0) {
+    }).then(group => {
+/*        if (group.length == 0) {
             return api.response(res, {
                 code: 400,
                 errors: 'Group not found',
             });
-        }
+        }*/
         return api.response(res, {
             code: 200,
-            data: groups,
+            data: {group},
         });
     }).catch(function (err) {
         return api.response(res, {
@@ -114,6 +114,8 @@ exports.delete = (req, res) => {
         }
         return api.response(res, {code: 200, message: 'Delete successful'});
     }).catch(function (err) {
+        console.log('----------------------');
+      //  console.log(err);
         return api.response(res, {
             code: 422,
             errors: err.message,
